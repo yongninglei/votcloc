@@ -1,9 +1,9 @@
 classdef fLocSession
     
     properties
-        name      % participant initials or id string
+        subID      % participant initials or id string
         date      % session date
-        trigger   % option to trigger scanner (0 = no, 1 = yes)
+        if_trigger_scanner   % option to trigger scanner (0 = no, 1 = yes)
         num_runs  % number of runs in experiment
         sequence  % session fLocSequence object
         responses % behavioral response data structure
@@ -46,9 +46,9 @@ classdef fLocSession
     methods
         
         % class constructor
-        function session = fLocSession(name, trigger, stim_set, num_runs, task_num)
-            session.name = deblank(name);
-            session.trigger = trigger;
+        function session = fLocSession(subID, if_trigger_scanner, stim_set, num_runs, task_num)
+            session.subID = deblank(subID);
+            session.if_trigger_scanner = if_trigger_scanner;
             if nargin < 3
                 session.stim_set = 3;
             else
@@ -71,7 +71,7 @@ classdef fLocSession
         
         % get session-specific id string
         function id = get.id(session)
-            par_str = [session.name '_' session.date];
+            par_str = [session.subID '_' session.date];
             exp_str = [session.task_name '_' num2str(session.num_runs) 'runs'];
             id = [par_str '_' exp_str];
         end
@@ -101,7 +101,7 @@ classdef fLocSession
         % define/load stimulus sequences for this session
         function session = load_seqs(session)
             fname = [session.id '_fLocSequence.mat'];
-            fpath = fullfile(session.exp_dir, 'data', session.id, fname);
+            fpath = fullfile(session.exp_dir, 'data', session.id,fname);
             % make stimulus sequences if not already defined for session
             if ~exist(fpath, 'file')
                 seq = fLocSequence(session.stim_set, session.num_runs, session.task_num);
@@ -118,7 +118,7 @@ classdef fLocSession
         function session = find_inputs(session)
             laptop_key = get_keyboard_num;
             button_key = get_box_num;
-            if session.trigger == 1 && button_key ~= 0
+            if session.if_trigger_scanner == 1 && button_key ~= 0
                 session.keyboard = laptop_key;
                 session.input = button_key;
             else
@@ -153,13 +153,13 @@ classdef fLocSession
                 end
             end
             % start experiment triggering scanner if applicable
-            if session.trigger == 0
+            if session.if_trigger_scanner == 0
                 Screen('FillRect', window_ptr, bcol);
                 Screen('Flip', window_ptr);
                 DrawFormattedText(window_ptr, session.instructions, 'center', 'center', tcol);
                 Screen('Flip', window_ptr);
                 get_key('g', session.keyboard);
-            elseif session.trigger == 1
+            elseif session.if_trigger_scanner == 1
                 Screen('FillRect', window_ptr, bcol);
                 Screen('Flip', window_ptr);
                 DrawFormattedText(window_ptr, session.instructions, 'center', 'center', tcol); % 'flipHorizontal', 1);

@@ -8,24 +8,31 @@ classdef fLocSequence
     end
     
     properties (Hidden)
-        stim_set     % stimulus set/s (1 = standard, 2 = alternate, 3 = both)
-        task_num     % task number (1 = 1-back, 2 = 2-back, 3 = oddball)
+        stim_set     % stimulus set/s (1 = mini_stimulus_set, 2 = fLoc_other_VOTC_set)
+        task_num     % task number (1 = 1-back, 2 = 2-back, 3 = oddball, 4 = passive_reading)
         block_onsets % block onsets relative to beginning of run (seconds)
         block_conds  % block conditions labels
     end
     
     properties (Constant)
-        stim_conds = {'Bodies' 'Characters' 'Faces' 'Objects' 'Places'};
-        stim_per_block = 12;   % number of stimuli in a block
-        stim_duty_cycle = 0.5; % duration of stimulus duty cycle (s)
+        %stim_conds = {'Bodies' 'Characters' 'Faces' 'Objects' 'Places'};
+        stim_conds_mini = {'RW' 'LEX' 'PER'};  % this indicates contrast groups
+        %stim_conds_floc = {'RW' 'PER' 'fLOC'}
+        stim_conds_floc = {'Bodies' 'Characters' 'Faces' 'Objects' 'Places'}
+        stim_per_block_mini = 20;   % number of stimuli in a block
+        stim_per_block_floc = 12;
+        stim_duty_cycle = 0.5; % duration of stimulus duty cycle (s)---> what do we want? 400ms 100ms or 400ms 200ms ? -->we can use pilot to compare with mini.
     end
     
     properties (Constant, Hidden)
-        stim_set1 = {'body' 'word' 'adult' 'car' 'house'};
-        stim_set2 = {'limb' 'number' 'child' 'instrument' 'corridor'};
-        stim_per_set = 144;
-        task_names = {'1back' '2back' 'oddball'};
-        task_freq = 0.5;
+        stim_set0 = {'RW'} %RW
+        stim_set1 = {'PW' 'FF' 'CS'}; % LEX contrast
+        stim_set2 = {'SD' 'CB' 'PS'}; % PER contrast
+        stim_set3 = {'body' 'adult'}; % non-word contrast, used to define the other VOTC region
+
+        stim_per_set = 80;
+        task_names = {'1back' '2back' 'oddball' 'passive_reading'};
+        task_freq = 0.5; %it determines how offen there will be a task condition
     end
     
     properties (Dependent)
@@ -45,17 +52,17 @@ classdef fLocSequence
         % class constructor
         function seq = fLocSequence(stim_set, num_runs, task_num)
             if nargin < 1
-                seq.stim_set = 3;
+                seq.stim_set = 1;
             else
                 seq.stim_set = stim_set;
             end
             if nargin < 2
-                seq.num_runs = 4;
+                seq.num_runs = 2;
             else
                 seq.num_runs = num_runs;
             end
             if nargin < 3
-                seq.task_num = 3;
+                seq.task_num = 4;
             else
                 seq.task_num = task_num;
             end
@@ -66,13 +73,20 @@ classdef fLocSequence
             task_name = seq.task_names{seq.task_num};
         end
         
-        % get run duration given stimulus duty cycle
+        % get run duration for MINI or fLoc given stimulus duty cycle
         function run_dur = get.run_dur(seq)
-            block_dur = seq.stim_per_block * seq.stim_duty_cycle;
-            blocks_per_run = 1 + (1 + length(seq.stim_conds)) ^ 2 + 1;
+            if seq.stim_set == 1 % using mini
+                stim_per_block = seq.stim_per_block_mini;
+                blocks_per_run = 1+2*(2.*length(seq.stim_conds_mini) + 1)+1;
+            else % use floc
+                stim_per_block = seq.stim_per_block_floc;
+                blocks_per_run = 1 + (1 + length(seq.stim_conds_floc)) ^ 2 + 1;
+            end
+            block_dur = stim_per_block * seq.stim_duty_cycle;
             run_dur = block_dur * blocks_per_run;
         end
         
+   
         % get ISI duration given task
         function isi_dur = get.isi_dur(seq)
             if seq.task_num == 3
@@ -96,11 +110,13 @@ classdef fLocSequence
         function run_sets = get.run_sets(seq)
             switch seq.stim_set
                 case 1
-                    run_sets = repmat(seq.stim_set1, seq.num_runs, 1);
+                    run_sets = [seq.stim_set0; seq.stim_set1'; seq.stim_set2'];
+                    cat_iters = ceil(seq.num_runs / 2);
+                    run_sets = repmat(run_sets, cat_iters, 1);
+                    run_sets = run_sets(1:seq.num_runs, :);
+                
                 case 2
-                    run_sets = repmat(seq.stim_set2, seq.num_runs, 1);
-                case 3
-                    run_sets = [seq.stim_set1; seq.stim_set2];
+                    run_sets = [seq.stim_set0; seq.stim_set3'];
                     cat_iters = ceil(seq.num_runs / 2);
                     run_sets = repmat(run_sets, cat_iters, 1);
                     run_sets = run_sets(1:seq.num_runs, :);
